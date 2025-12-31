@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "443637757906",
+    "project_id": "marh-d7946",
+    "storage_bucket": "marh-d7946.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443637757906:android:dcb1a2cb9b331518c97a0b",
+        "android_client_info": {
+          "package_name": "com.zyqube.themakeconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj2s0P0V3n7M-p2aGx0CpzwwSuYaFafNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
