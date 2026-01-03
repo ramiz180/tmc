@@ -15,7 +15,10 @@ import {
   ShoppingBag,
   Home,
   Building,
-  Navigation
+  Navigation,
+  X,
+  ExternalLink,
+  Eye
 } from "lucide-react";
 
 const MapMarker = ({ text }: { text: string; lat: number; lng: number }) => (
@@ -27,7 +30,7 @@ const MapMarker = ({ text }: { text: string; lat: number; lng: number }) => (
   </div>
 );
 
-const UserCard = ({ u, onToggleStatus, onDelete }: { u: any; onToggleStatus: (id: string) => void; onDelete: (id: string) => void }) => {
+const UserCard = ({ u, onToggleStatus, onDelete, onViewServices }: { u: any; onToggleStatus: (id: string) => void; onDelete: (id: string) => void; onViewServices: (user: any) => void }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +105,16 @@ const UserCard = ({ u, onToggleStatus, onDelete }: { u: any; onToggleStatus: (id
 
           {u.role === "worker" && (
             <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex flex-col justify-center">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Services Added</p>
+              <div className="flex items-center gap-2 text-gray-800">
+                <ShoppingBag size={16} className="text-green-500" />
+                <span className="text-lg font-black">{u.serviceCount || 0}</span>
+              </div>
+            </div>
+          )}
+
+          {u.role === "worker" && (
+            <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex flex-col justify-center">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rating</p>
               <div className="flex items-center gap-2 text-gray-800">
                 <Star size={16} className="text-amber-400 fill-amber-400" />
@@ -153,6 +166,16 @@ const UserCard = ({ u, onToggleStatus, onDelete }: { u: any; onToggleStatus: (id
             )}
           </div>
         </div>
+
+        {u.role === "worker" && (
+          <button
+            onClick={() => onViewServices(u)}
+            className="w-full mb-4 flex items-center justify-center gap-2 py-3 bg-green-50 hover:bg-green-100 text-green-700 font-black text-sm rounded-2xl transition-all border border-green-100 active:scale-[0.98]"
+          >
+            <Eye size={18} />
+            View All Services
+          </button>
+        )}
       </div>
 
       <div className="h-[220px] w-full relative border-t border-gray-50 grayscale group-hover:grayscale-0 transition-all duration-500">
@@ -177,10 +200,117 @@ const UserCard = ({ u, onToggleStatus, onDelete }: { u: any; onToggleStatus: (id
   );
 };
 
+const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }) => {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (worker) {
+      fetch(`http://localhost:5000/api/services/worker/${worker._id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setServices(data.services);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Error fetching services:", err);
+          setLoading(false);
+        });
+    }
+  }, [worker]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+        <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Services by {worker.name}</h2>
+            <p className="text-gray-500 font-medium">{worker.phone} • {services.length} Services Added</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-3 hover:bg-gray-100 rounded-2xl transition-colors text-gray-400 hover:text-gray-900"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 bg-gray-50/50">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-3xl h-64 animate-pulse border border-gray-100 shadow-sm" />
+              ))}
+            </div>
+          ) : services.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📭</div>
+              <h3 className="text-xl font-bold text-gray-900">No services found</h3>
+              <p className="text-gray-500">This worker hasn't added any services yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {services.map((s) => (
+                <div key={s._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-green-100 inline-block mb-1">
+                        {s.category}
+                      </span>
+                      <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{s.name}</h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-black text-green-600">₹{s.price}</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-500 text-xs mb-4 line-clamp-2 leading-relaxed">
+                    {s.description || "No description provided."}
+                  </p>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <MapPin size={14} className="text-red-500" />
+                      <span className="font-medium truncate">{s.location?.address}</span>
+                    </div>
+                  </div>
+
+                  {/* Media Grid */}
+                  {(s.images?.length > 0 || s.videos?.length > 0) && (
+                    <div className="grid grid-cols-4 gap-2 mb-4 mt-auto">
+                      {s.images?.slice(0, 4).map((img: string, idx: number) => (
+                        <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative group/media">
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          {idx === 3 && s.images.length > 4 && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-xs">
+                              +{s.images.length - 4}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {!s.images?.length && s.videos?.slice(0, 4).map((vid: string, idx: number) => (
+                        <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-gray-100 bg-gray-900 flex items-center justify-center">
+                          <span className="text-white text-[10px] font-bold">VIDEO</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Users() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSubTab, setActiveSubTab] = useState<"customer" | "worker">("customer");
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -217,6 +347,11 @@ export default function Users() {
   const filteredUsers = users.filter(u =>
     activeSubTab === "worker" ? u.role === "worker" : (u.role === "customer" || u.role === "hirer")
   );
+
+  const openServicesModal = (worker: any) => {
+    setSelectedWorker(worker);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -305,12 +440,20 @@ export default function Users() {
                   u={u}
                   onToggleStatus={handleToggleStatus}
                   onDelete={handleDelete}
+                  onViewServices={openServicesModal}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {isModalOpen && selectedWorker && (
+        <ServicesModal
+          worker={selectedWorker}
+          onClose={() => { setIsModalOpen(false); setSelectedWorker(null); }}
+        />
+      )}
     </div>
   );
 }

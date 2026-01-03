@@ -19,16 +19,17 @@ import { CONFIG } from '../../constants/Config';
 
 const { width } = Dimensions.get('window');
 
-const CATEGORY_ICONS: any = {
-    'Beauty Services': 'beauty_service_category_1766820880508.png',
-    'Plumbing': 'plumbing_service_category_1766820895818.png',
-    'Electrical': 'electrical_service_category_1766820911558.png',
-    'Home Cleaning': 'cleaning_service_category_1766820930070.png',
-    'Handyman': 'handyman_service_category_1766820946084.png',
-    'Tutoring': 'tutoring_service_category_1766820960722.png',
+// Fallback images for common categories
+const CATEGORY_IMAGES: any = {
+    'Beauty Services': 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=500&q=80',
+    'Plumbing': 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=500&q=80',
+    'Electrical': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80',
+    'Home Cleaning': 'https://images.unsplash.com/photo-1581578731548-c64695ce6958?w=500&q=80',
+    'Handyman': 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=500&q=80',
+    'Tutoring': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&q=80',
 };
 
-const FILTERS = ['Top Rated', 'Available Now', 'Verified', 'Discounted'];
+const DEFAULT_CATEGORY_IMAGE = 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=500&q=80';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -43,10 +44,39 @@ export default function CustomerHomeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState('Home');
-    const [activeFilter, setActiveFilter] = useState('Top Rated');
     const [services, setServices] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
+    const [selectedSubCategory, setSelectedSubCategory] = useState('All');
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [userLocation, setUserLocation] = useState<any>(null);
+
+    useEffect(() => {
+        fetchLocation();
+        fetchCategories();
+    }, []);
+
+    const fetchLocation = async () => {
+        const locJson = await AsyncStorage.getItem('userLocation');
+        if (locJson) setUserLocation(JSON.parse(locJson));
+    };
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // Radius of the earth in km
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const d = R * c; // Distance in km
+        return d.toFixed(1);
+    };
+
+    const deg2rad = (deg: number) => deg * (Math.PI / 180);
 
     useEffect(() => {
         if (activeTab === 'Home') {
@@ -56,10 +86,32 @@ export default function CustomerHomeScreen() {
         }
     }, [activeTab]);
 
+    const fetchCategories = async () => {
+        try {
+            const response = await fetch(`${CONFIG.BACKEND_URL}/categories`);
+            const data = await response.json();
+            if (data.success) {
+                setCategories(data.categories);
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
     const fetchServices = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${CONFIG.BACKEND_URL}/services`);
+            const userLocationJson = await AsyncStorage.getItem('userLocation');
+            let url = `${CONFIG.BACKEND_URL}/services`;
+
+            if (userLocationJson) {
+                const userLocation = JSON.parse(userLocationJson);
+                if (userLocation.latitude && userLocation.longitude) {
+                    url += `?lat=${userLocation.latitude}&lng=${userLocation.longitude}`;
+                }
+            }
+
+            const response = await fetch(url);
             const data = await response.json();
             if (data.success) {
                 setServices(data.services);
@@ -93,14 +145,18 @@ export default function CustomerHomeScreen() {
 
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                <TouchableOpacity>
-                    <Ionicons name="menu" size={28} color="#FFF" />
+                <TouchableOpacity onPress={() => selectedCategory ? setSelectedCategory(null) : null}>
+                    <Ionicons name={selectedCategory ? "chevron-back" : "menu"} size={28} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>The Make Connect</Text>
-                <TouchableOpacity style={styles.notificationBtn}>
-                    <Ionicons name="notifications-outline" size={24} color="#FFF" />
-                    <View style={styles.notificationDot} />
-                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{selectedCategory ? selectedCategory.name : 'The Make Connect'}</Text>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity style={styles.iconBtn}>
+                        <Ionicons name="search" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn}>
+                        <Ionicons name="options-outline" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {activeTab === 'Home' ? (
@@ -109,82 +165,101 @@ export default function CustomerHomeScreen() {
                     contentContainerStyle={{ paddingBottom: 120 }}
                 >
                     {/* Greeting & Search */}
-                    <View style={styles.topSection}>
-                        <Text style={styles.greeting}>Hello!</Text>
-                        <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={20} color="#9CA3AF" />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search for a service or worker..."
-                                placeholderTextColor="#9CA3AF"
-                            />
-                            <TouchableOpacity style={styles.filterBtn}>
-                                <Ionicons name="options" size={20} color="#00E5A0" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* Categories Grid */}
-                    <View style={styles.categoriesGrid}>
-                        {Object.keys(CATEGORY_ICONS).map((catName) => (
-                            <TouchableOpacity
-                                key={catName}
-                                style={styles.categoryCard}
-                            >
-                                <Image
-                                    source={{ uri: `file://C:/Users/HP/.gemini/antigravity/brain/0f35e5b5-e4f1-4ab0-a48b-3eab3d6e83c7/${CATEGORY_ICONS[catName]}` }}
-                                    style={styles.categoryImage}
+                    {!selectedCategory && (
+                        <View style={styles.topSection}>
+                            <Text style={styles.greeting}>Hello!</Text>
+                            <View style={styles.searchContainer}>
+                                <Ionicons name="search" size={20} color="#9CA3AF" />
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search for a service or worker..."
+                                    placeholderTextColor="#9CA3AF"
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
                                 />
-                                <View style={styles.categoryOverlay}>
-                                    <Text style={styles.categoryName}>{catName}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* All Services */}
-                    <View style={styles.nearbySection}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Available Services</Text>
-                            {loading && <ActivityIndicator size="small" color="#00E5A0" />}
+                                <TouchableOpacity style={styles.filterBtn}>
+                                    <Ionicons name="options" size={20} color="#00E5A0" />
+                                </TouchableOpacity>
+                            </View>
                         </View>
+                    )}
 
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.workersList}
-                        >
-                            {services.length === 0 && !loading ? (
-                                <Text style={styles.emptyText}>No services available yet</Text>
-                            ) : (
-                                services.map((service) => (
-                                    <ServiceCard
-                                        key={service._id}
-                                        service={service}
-                                        onPress={() => router.push({
-                                            pathname: '/customer/servicedetails',
-                                            params: { id: service._id }
-                                        })}
-                                    />
-                                ))
-                            )}
-                        </ScrollView>
-                    </View>
-
-                    {/* Filter Bar */}
-                    <View style={styles.filterBar}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {FILTERS.map((f) => (
+                    {!selectedCategory ? (
+                        /* Categories Grid */
+                        <View style={styles.categoriesGrid}>
+                            {categories.map((cat) => (
                                 <TouchableOpacity
-                                    key={f}
-                                    style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
-                                    onPress={() => setActiveFilter(f)}
+                                    key={cat._id}
+                                    style={styles.categoryCard}
+                                    onPress={() => setSelectedCategory(cat)}
                                 >
-                                    <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>{f}</Text>
+                                    <Image
+                                        source={{ uri: CATEGORY_IMAGES[cat.name] || DEFAULT_CATEGORY_IMAGE }}
+                                        style={styles.categoryImage}
+                                    />
+                                    <View style={styles.categoryOverlay}>
+                                        <Text style={styles.categoryName}>{cat.name}</Text>
+                                    </View>
                                 </TouchableOpacity>
                             ))}
-                        </ScrollView>
-                    </View>
+                        </View>
+                    ) : (
+                        /* Category-specific Services View */
+                        <View style={styles.categoryView}>
+                            {/* Sub-category Filter */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.subCatFilters}
+                                contentContainerStyle={styles.subCatContent}
+                            >
+                                <TouchableOpacity
+                                    style={[styles.subCatChip, selectedSubCategory === 'All' && styles.subCatChipActive]}
+                                    onPress={() => setSelectedSubCategory('All')}
+                                >
+                                    <Text style={[styles.subCatText, selectedSubCategory === 'All' && styles.subCatTextActive]}>All</Text>
+                                </TouchableOpacity>
+                                {selectedCategory.subCategories?.map((sub: string) => (
+                                    <TouchableOpacity
+                                        key={sub}
+                                        style={[styles.subCatChip, selectedSubCategory === sub && styles.subCatChipActive]}
+                                        onPress={() => setSelectedSubCategory(sub)}
+                                    >
+                                        <Text style={[styles.subCatText, selectedSubCategory === sub && styles.subCatTextActive]}>{sub}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            {/* Service List */}
+                            <View style={styles.serviceList}>
+                                {services
+                                    .filter(s => s.category === selectedCategory.name)
+                                    .filter(s => selectedSubCategory === 'All' || s.subCategories?.includes(selectedSubCategory))
+                                    .length === 0 ? (
+                                    <View style={styles.emptyContainer}>
+                                        <MaterialCommunityIcons name="account-search-outline" size={64} color="#334155" />
+                                        <Text style={styles.emptyText}>No workers available</Text>
+                                        <Text style={styles.emptySubText}>Try another sub-category or radius.</Text>
+                                    </View>
+                                ) : (
+                                    services
+                                        .filter(s => s.category === selectedCategory.name)
+                                        .filter(s => selectedSubCategory === 'All' || s.subCategories?.includes(selectedSubCategory))
+                                        .map((service) => (
+                                            <WorkerCard
+                                                key={service._id}
+                                                service={service}
+                                                distance={userLocation && service.location ? calculateDistance(userLocation.latitude, userLocation.longitude, service.location.latitude, service.location.longitude) : '?.?'}
+                                                onPress={() => router.push({
+                                                    pathname: '/customer/servicedetails',
+                                                    params: { id: service._id }
+                                                })}
+                                            />
+                                        ))
+                                )}
+                            </View>
+                        </View>
+                    )}
                 </ScrollView>
             ) : activeTab === 'Bookings' ? (
                 <ScrollView
@@ -285,28 +360,43 @@ export default function CustomerHomeScreen() {
     );
 }
 
-const ServiceCard = ({ service, onPress }: any) => (
-    <TouchableOpacity style={styles.workerCard} onPress={onPress}>
-        <View style={styles.serviceIconContainer}>
-            {service.images && service.images.length > 0 ? (
-                <Image source={{ uri: service.images[0] }} style={styles.serviceImage} />
-            ) : service.videos && service.videos.length > 0 ? (
-                <MaterialCommunityIcons name="video" size={40} color="#00E5A0" />
-            ) : (
-                <MaterialCommunityIcons name="tools" size={32} color="#00E5A0" />
-            )}
-        </View>
-        <View style={styles.workerInfo}>
-            <Text style={styles.workerName} numberOfLines={1}>{service.name}</Text>
-            <View style={styles.workerStats}>
-                <Ionicons name="star" size={12} color="#FBBF24" />
-                <Text style={styles.workerRating}>4.8</Text>
+const WorkerCard = ({ service, distance }: any) => {
+    const router = useRouter();
+    return (
+        <TouchableOpacity
+            style={styles.workerRowCard}
+            onPress={() => router.push({
+                pathname: '/customer/servicedetails',
+                params: { id: service._id }
+            })}
+        >
+            <Image
+                source={{ uri: service.images?.[0] || 'https://via.placeholder.com/100' }}
+                style={styles.workerAvatar}
+            />
+            <View style={styles.workerDetails}>
+                <View style={styles.workerHeader}>
+                    <Text style={styles.workerNameText} numberOfLines={1}>{service.workerName}</Text>
+                    <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={14} color="#FBBF24" />
+                        <Text style={styles.ratingText}>{service.workerId?.rating || '4.5'}</Text>
+                    </View>
+                </View>
+                <Text style={styles.serviceTitle} numberOfLines={1}>{service.name}</Text>
+                <Text style={styles.distanceText}>{distance} km away</Text>
             </View>
-            <Text style={styles.priceText}>₹{service.price}</Text>
-            <Text style={styles.workerDist}>{service.workerName}</Text>
-        </View>
-    </TouchableOpacity>
-);
+            <TouchableOpacity
+                style={styles.bookBtn}
+                onPress={() => router.push({
+                    pathname: '/customer/bookingdetails',
+                    params: { id: service._id }
+                })}
+            >
+                <Text style={styles.bookBtnText}>Book</Text>
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
+};
 
 const NavItem = ({ icon, label, active, onPress }: any) => (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
@@ -329,8 +419,16 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: '#F9FAFB',
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '800',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+    },
+    iconBtn: {
+        padding: 4,
     },
     notificationBtn: {
         position: 'relative',
@@ -373,148 +471,162 @@ const styles = StyleSheet.create({
     filterBtn: {
         padding: 4,
     },
+
+    servicesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: 15,
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
     categoriesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        padding: 10,
-        marginTop: 20,
+        paddingHorizontal: 10,
+        marginTop: 10,
     },
     categoryCard: {
         width: (width - 40) / 2,
-        height: 120,
+        height: 180,
         margin: 5,
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: 'hidden',
         backgroundColor: '#1E293B',
     },
     categoryImage: {
         width: '100%',
         height: '100%',
-        opacity: 0.7,
+        opacity: 0.8,
     },
     categoryOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'flex-end',
-        padding: 12,
+        padding: 15,
     },
     categoryName: {
         color: '#FFF',
-        fontSize: 15,
-        fontWeight: '700',
-    },
-    nearbySection: {
-        marginTop: 30,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        marginBottom: 20,
-    },
-    sectionTitle: {
-        color: '#FFF',
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: '800',
     },
-    workersList: {
+    categoryView: {
+        flex: 1,
+    },
+    subCatFilters: {
+        marginTop: 15,
         paddingHorizontal: 15,
-        gap: 15,
+        maxHeight: 50,
     },
-    workerCard: {
+    subCatContent: {
+        gap: 10,
+        paddingRight: 30,
+    },
+    subCatChip: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
         backgroundColor: '#1E293B',
-        borderRadius: 20,
-        padding: 12,
-        width: 160,
-        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#334155',
     },
-    serviceIconContainer: {
-        width: 100,
-        height: 80,
-        backgroundColor: '#334155',
-        borderRadius: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-        overflow: 'hidden',
+    subCatChipActive: {
+        backgroundColor: '#00E5A0',
+        borderColor: '#00E5A0',
     },
-    serviceImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    workerImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        marginBottom: 10,
-    },
-    workerInfo: {
-        alignItems: 'center',
-        width: '100%',
-    },
-    workerName: {
-        color: '#FFF',
+    subCatText: {
+        color: '#9CA3AF',
         fontSize: 14,
         fontWeight: '700',
-        marginBottom: 4,
-        textAlign: 'center',
     },
-    workerStats: {
+    subCatTextActive: {
+        color: '#000',
+    },
+    serviceList: {
+        padding: 15,
+        gap: 15,
+    },
+    workerRowCard: {
+        backgroundColor: '#1E293B',
+        borderRadius: 20,
+        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
+    workerAvatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 15,
+        backgroundColor: '#334155',
+    },
+    workerDetails: {
+        flex: 1,
+        marginLeft: 15,
+        justifyContent: 'center',
+    },
+    workerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    workerNameText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    ratingBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
     },
-    workerRating: {
+    ratingText: {
         color: '#FFF',
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: 14,
+        fontWeight: '700',
     },
-    priceText: {
-        color: '#00E5A0',
-        fontSize: 16,
-        fontWeight: '800',
-        marginTop: 4,
-    },
-    workerDist: {
-        color: '#9CA3AF',
-        fontSize: 11,
-        marginTop: 2,
-        textAlign: 'center',
-    },
-    emptyText: {
+    serviceTitle: {
         color: '#9CA3AF',
         fontSize: 14,
-        fontStyle: 'italic',
-        textAlign: 'center',
-        width: width - 30,
-        paddingVertical: 20,
+        marginBottom: 4,
     },
-    filterBar: {
-        marginTop: 25,
+    distanceText: {
+        color: '#9CA3AF',
+        fontSize: 12,
+    },
+    bookBtn: {
+        backgroundColor: '#00E5A0',
         paddingHorizontal: 20,
-    },
-    filterChip: {
-        paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 25,
-        backgroundColor: '#1E293B',
-        marginRight: 10,
-        borderWidth: 1,
-        borderColor: '#334155',
     },
-    filterChipActive: {
-        backgroundColor: 'rgba(0, 229, 160, 0.1)',
-        borderColor: '#00E5A0',
+    bookBtnText: {
+        color: '#000',
+        fontSize: 14,
+        fontWeight: '800',
     },
-    filterChipText: {
+
+
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+        width: width - 40,
+    },
+
+    emptyText: {
         color: '#9CA3AF',
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: '600',
+        textAlign: 'center',
+        marginTop: 15,
     },
-    filterChipTextActive: {
-        color: '#00E5A0',
+    emptySubText: {
+        color: '#6B7280',
+        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 8,
     },
     bottomNav: {
         position: 'absolute',

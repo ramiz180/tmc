@@ -16,6 +16,7 @@ const serviceSchema = new mongoose.Schema(
         },
         images: [{ type: String }],
         videos: [{ type: String }],
+        coverageRadius: { type: Number, required: true, default: 5 },
     },
     { timestamps: true }
 );

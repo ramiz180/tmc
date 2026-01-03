@@ -36,6 +36,10 @@ export default function AddServiceScreen() {
     const [images, setImages] = useState<string[]>([]);
     const [videos, setVideos] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [coverageRadius, setCoverageRadius] = useState('5'); // Default 5km
+    const [isRadiusDropdownOpen, setIsRadiusDropdownOpen] = useState(false);
+
+    const radiusOptions = ['1', '2', '3', '4', '5', '10'];
 
     useEffect(() => {
         fetchCategories();
@@ -43,6 +47,15 @@ export default function AddServiceScreen() {
             fetchServiceDetails();
         }
     }, [id]);
+
+    useEffect(() => {
+        if (category && categoriesList.length > 0) {
+            const selectedCat = categoriesList.find(cat => cat.name === category);
+            if (selectedCat && selectedCat.subCategories) {
+                setAvailableSubCategories(selectedCat.subCategories);
+            }
+        }
+    }, [category, categoriesList]);
 
     const fetchCategories = async () => {
         try {
@@ -58,10 +71,10 @@ export default function AddServiceScreen() {
 
     const fetchServiceDetails = async () => {
         try {
-            const response = await fetch(`${CONFIG.BACKEND_URL}/services`);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/services/${id}`);
             const data = await response.json();
             if (data.success) {
-                const found = data.services.find((s: any) => s._id === id);
+                const found = data.service;
                 if (found) {
                     setName(found.name);
                     setCategory(found.category);
@@ -72,6 +85,15 @@ export default function AddServiceScreen() {
                     }
                     if (found.images) setImages(found.images);
                     if (found.videos) setVideos(found.videos);
+                    if (found.coverageRadius) setCoverageRadius(found.coverageRadius.toString());
+
+                    // Set available sub-categories for the loaded category
+                    if (categoriesList.length > 0) {
+                        const selectedCat = categoriesList.find(cat => cat.name === found.category);
+                        if (selectedCat && selectedCat.subCategories) {
+                            setAvailableSubCategories(selectedCat.subCategories);
+                        }
+                    }
                 }
             }
         } catch (error) {
@@ -222,6 +244,7 @@ export default function AddServiceScreen() {
                     subCategories: selectedSubCategories,
                     images,
                     videos,
+                    coverageRadius: parseInt(coverageRadius),
                 }),
             });
 
@@ -356,6 +379,52 @@ export default function AddServiceScreen() {
                     </View>
 
                     <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Service Coverage Radius (km) *</Text>
+
+                        <TouchableOpacity
+                            style={styles.dropdownTrigger}
+                            onPress={() => setIsRadiusDropdownOpen(!isRadiusDropdownOpen)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.dropdownValue}>{coverageRadius} km</Text>
+                            <Ionicons
+                                name={isRadiusDropdownOpen ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                color="#9CA3AF"
+                            />
+                        </TouchableOpacity>
+
+                        {isRadiusDropdownOpen && (
+                            <View style={[styles.categoryList, styles.radiusOptionsContainer]}>
+                                {radiusOptions.map((r) => (
+                                    <TouchableOpacity
+                                        key={r}
+                                        style={[
+                                            styles.categoryChip,
+                                            styles.radiusChip,
+                                            coverageRadius === r && styles.categoryChipActive,
+                                        ]}
+                                        onPress={() => {
+                                            setCoverageRadius(r);
+                                            setIsRadiusDropdownOpen(false);
+                                        }}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.categoryChipText,
+                                                coverageRadius === r && styles.categoryChipTextActive,
+                                            ]}
+                                        >
+                                            {r} km
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                        <Text style={styles.helperText}>How far are you willing to provide this specific service?</Text>
+                    </View>
+
+                    <View style={styles.inputGroup}>
                         <Text style={styles.label}>Service Media</Text>
                         <Text style={styles.helperText}>Add up to 5 images and 1 video to showcase your work.</Text>
 
@@ -462,6 +531,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         height: 56,
         justifyContent: 'center',
+    },
+    dropdownTrigger: {
+        backgroundColor: '#111827',
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        paddingHorizontal: 15,
+        height: 56,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dropdownValue: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    radiusOptionsContainer: {
+        marginTop: 15,
+    },
+    radiusChip: {
+        minWidth: 80,
+        alignItems: 'center',
     },
     input: {
         color: '#FFF',

@@ -2,12 +2,26 @@ import Booking from "../models/Booking.js";
 import User from "../models/User.js";
 
 export const createBooking = async (req, res) => {
-    const { serviceId, customerId, workerId } = req.body;
+    const {
+        serviceId,
+        customerId,
+        workerId,
+        location,
+        bookingDate,
+        bookingTime,
+        instructions,
+        paymentMethod
+    } = req.body;
     try {
         const newBooking = new Booking({
             serviceId,
             customerId,
             workerId,
+            location,
+            bookingDate,
+            bookingTime,
+            instructions,
+            paymentMethod,
             status: "pending",
         });
 
@@ -64,12 +78,29 @@ export const sendMessage = async (req, res) => {
     }
 };
 
+export const getBookingById = async (req, res) => {
+    const { bookingId } = req.params;
+    try {
+        const booking = await Booking.findById(bookingId)
+            .populate("serviceId")
+            .populate("customerId", "name phone location profileImage")
+            .populate("workerId", "name phone location profileImage");
+
+        if (!booking) {
+            return res.status(404).json({ success: false, message: "Booking not found" });
+        }
+        res.json({ success: true, booking });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 export const getAllBookings = async (req, res) => {
     try {
         const bookings = await Booking.find()
             .populate("serviceId")
-            .populate("customerId", "name phone location")
-            .populate("workerId", "name phone location");
+            .populate("customerId", "name phone location profileImage")
+            .populate("workerId", "name phone location profileImage");
         res.json({ success: true, bookings });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

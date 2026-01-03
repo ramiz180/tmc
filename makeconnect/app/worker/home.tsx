@@ -9,6 +9,7 @@ import {
     Dimensions,
     ScrollView,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +37,24 @@ export default function WorkerHomeScreen() {
     const [services, setServices] = useState<any[]>([]);
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [userData, setUserData] = useState<any>(null);
 
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    const fetchUserData = async () => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            const response = await fetch(`${CONFIG.BACKEND_URL}/users/${userId}`);
+            const data = await response.json();
+            if (data.success) {
+                setUserData(data.user);
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    };
     useEffect(() => {
         if (activeTab === 'Services') {
             fetchMyServices();
@@ -44,6 +62,24 @@ export default function WorkerHomeScreen() {
             fetchMyBookings();
         }
     }, [activeTab]);
+
+    const handleLogout = async () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await AsyncStorage.clear();
+                        router.replace('/auth/roleselectionscreen');
+                    }
+                }
+            ]
+        );
+    };
 
     const fetchMyServices = async () => {
         setLoading(true);
@@ -265,6 +301,84 @@ export default function WorkerHomeScreen() {
                         ))
                     )}
                 </ScrollView>
+            ) : activeTab === 'Profile' ? (
+                <ScrollView
+                    style={styles.profileBody}
+                    contentContainerStyle={{ paddingBottom: 150 }}
+                >
+                    <View style={styles.profileHeader}>
+                        <View style={styles.avatarContainer}>
+                            {userData?.profileImage ? (
+                                <Image
+                                    source={{ uri: userData.profileImage }}
+                                    style={styles.profileAvatar}
+                                />
+                            ) : (
+                                <View style={[styles.profileAvatar, styles.avatarPlaceholder]}>
+                                    <Ionicons name="person" size={40} color="#9CA3AF" />
+                                </View>
+                            )}
+                        </View>
+                        <Text style={styles.profileName}>{userData?.name || 'Worker Name'}</Text>
+                        <TouchableOpacity
+                            style={styles.editProfileBtn}
+                            onPress={() => router.push('/worker/profile')}
+                        >
+                            <Text style={styles.editProfileText}>Edit Profile</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.profileSection}>
+                        <Text style={styles.sectionHeader}>Account</Text>
+                        <TouchableOpacity
+                            style={styles.profileItem}
+                            onPress={() => setActiveTab('Services')}
+                        >
+                            <View style={styles.profileItemLeft}>
+                                <View style={styles.iconBg}>
+                                    <MaterialCommunityIcons name="tools" size={20} color="#FFF" />
+                                </View>
+                                <Text style={styles.profileItemText}>My Services</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#4B5563" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.profileSection}>
+                        <Text style={styles.sectionHeader}>Settings</Text>
+                        <View style={styles.settingsGroup}>
+                            <ProfileOption
+                                icon="help-circle-outline"
+                                label="Help & Support"
+                                onPress={() => { }}
+                            />
+                            <ProfileOption
+                                icon="globe-outline"
+                                label="Languages"
+                                onPress={() => { }}
+                            />
+                            <ProfileOption
+                                icon="document-text-outline"
+                                label="Terms & Conditions"
+                                onPress={() => { }}
+                            />
+                            <ProfileOption
+                                icon="shield-checkmark-outline"
+                                label="Privacy Policy"
+                                onPress={() => { }}
+                                isLast
+                            />
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.logoutBtn}
+                        onPress={handleLogout}
+                    >
+                        <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+                        <Text style={styles.logoutText}>Logout</Text>
+                    </TouchableOpacity>
+                </ScrollView>
             ) : (
                 <View style={styles.content}>
                     <Text style={{ color: '#9CA3AF' }}>{activeTab} Screen Coming Soon</Text>
@@ -317,6 +431,21 @@ const NavItem = ({ icon, label, active, onPress, isMaterial }: any) => (
             <Ionicons name={icon} size={24} color={active ? "#00E5A0" : "#9CA3AF"} />
         )}
         <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+    </TouchableOpacity>
+);
+
+const ProfileOption = ({ icon, label, onPress, isLast }: any) => (
+    <TouchableOpacity
+        style={[styles.profileItem, isLast && { borderBottomWidth: 0 }]}
+        onPress={onPress}
+    >
+        <View style={styles.profileItemLeft}>
+            <View style={styles.iconBg}>
+                <Ionicons name={icon} size={20} color="#FFF" />
+            </View>
+            <Text style={styles.profileItemText}>{label}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#4B5563" />
     </TouchableOpacity>
 );
 
@@ -621,5 +750,114 @@ const styles = StyleSheet.create({
     chatLinkText: {
         color: '#000',
         fontWeight: '800',
+    },
+    profileBody: {
+        flex: 1,
+    },
+    profileHeader: {
+        alignItems: 'center',
+        paddingVertical: 30,
+    },
+    avatarContainer: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: '#1F2937',
+        padding: 4,
+        marginBottom: 15,
+    },
+    profileAvatar: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 55,
+    },
+    avatarPlaceholder: {
+        backgroundColor: '#111827',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileName: {
+        color: '#FFF',
+        fontSize: 24,
+        fontWeight: '800',
+        marginBottom: 15,
+    },
+    editProfileBtn: {
+        backgroundColor: '#111827',
+        paddingHorizontal: 25,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+    },
+    editProfileText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    profileSection: {
+        paddingHorizontal: 20,
+        marginBottom: 25,
+    },
+    sectionHeader: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 12,
+        marginLeft: 5,
+    },
+    profileItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#111827',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+    },
+    settingsGroup: {
+        backgroundColor: '#111827',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        overflow: 'hidden',
+    },
+    profileItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    iconBg: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#1F2937',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileItemText: {
+        color: '#FFF',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    logoutBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        marginHorizontal: 20,
+        height: 56,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.2)',
+        marginBottom: 40,
+    },
+    logoutText: {
+        color: '#EF4444',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

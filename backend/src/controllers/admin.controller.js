@@ -1,19 +1,22 @@
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
+import Service from "../models/Service.js";
 
 export const getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select("-otp -otpExpires");
 
-        // Enrich users with booking counts
+        // Enrich users with booking and service counts
         const enrichedUsers = await Promise.all(users.map(async (u) => {
             let count = 0;
+            let serviceCount = 0;
             if (u.role === "worker") {
                 count = await Booking.countDocuments({ workerId: u._id, status: "completed" });
+                serviceCount = await Service.countDocuments({ workerId: u._id });
             } else {
                 count = await Booking.countDocuments({ customerId: u._id });
             }
-            return { ...u._doc, count };
+            return { ...u._doc, count, serviceCount };
         }));
 
         res.json(enrichedUsers);

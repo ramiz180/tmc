@@ -19,6 +19,18 @@ const userSchema = new mongoose.Schema(
       contactPhone: { type: String, default: "" },
     },
     rating: { type: Number, default: 0 },
+    about: { type: String, default: "" },
+    profileImage: { type: String, default: "" },
+    gender: { type: String, default: "" },
+    age: { type: Number },
+    verificationStatus: { type: String, enum: ["verified", "pending", "unverified"], default: "unverified" },
+    documents: [
+      {
+        name: { type: String },
+        url: { type: String },
+        status: { type: String, enum: ["verified", "pending", "rejected"], default: "pending" }
+      }
+    ],
   },
   { timestamps: true }
 );
