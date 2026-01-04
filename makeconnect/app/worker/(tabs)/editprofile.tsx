@@ -17,9 +17,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CONFIG } from '../../constants/Config';
+import { CONFIG } from '../../../constants/Config';
 
-export default function WorkerProfileScreen() {
+export default function WorkerEditProfileScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function WorkerProfileScreen() {
             if (data.success) {
                 setUserData(data.user);
                 setName(data.user.name || '');
-                setAbout(data.user.about || 'With over 15 years of experience, I specialize in residential and commercial electrical systems. Committed to safety, quality, and reliability on every project.');
+                setAbout(data.user.about || '');
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -103,6 +103,11 @@ export default function WorkerProfileScreen() {
     };
 
     const handleSave = async () => {
+        if (!name.trim()) {
+            Alert.alert('Error', 'Name cannot be empty');
+            return;
+        }
+
         setLoading(true);
         try {
             const userId = await AsyncStorage.getItem('userId');
@@ -118,7 +123,9 @@ export default function WorkerProfileScreen() {
             });
             const data = await response.json();
             if (data.success) {
-                Alert.alert('Success', 'Profile updated successfully!');
+                Alert.alert('Success', 'Profile updated successfully!', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
             } else {
                 Alert.alert('Error', data.message || 'Failed to update profile');
             }
@@ -129,6 +136,16 @@ export default function WorkerProfileScreen() {
             setLoading(false);
         }
     };
+
+    const renderRatingRow = (label: string, percent: number, val: string) => (
+        <View style={styles.barContainer}>
+            <Text style={styles.barLabel}>{label}</Text>
+            <View style={styles.barBackground}>
+                <View style={[styles.barFill, { width: `${percent * 100}%` }]} />
+            </View>
+            <Text style={styles.barPercent}>{val}</Text>
+        </View>
+    );
 
     if (loading && !userData) {
         return (
@@ -147,7 +164,7 @@ export default function WorkerProfileScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Profile</Text>
                 <TouchableOpacity onPress={handleSave}>
-                    <Text style={styles.saveBtnText}>Save</Text>
+                    <Text style={styles.saveHeaderBtn}>Save</Text>
                 </TouchableOpacity>
             </View>
 
@@ -159,7 +176,7 @@ export default function WorkerProfileScreen() {
                             <Image source={{ uri: userData.profileImage }} style={styles.avatar} />
                         ) : (
                             <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                                <Ionicons name="person" size={50} color="#666" />
+                                <Ionicons name="person" size={60} color="#666" />
                             </View>
                         )}
                         <TouchableOpacity style={styles.editAvatarBtn} onPress={pickImage}>
@@ -172,7 +189,7 @@ export default function WorkerProfileScreen() {
                 {/* Rating Section */}
                 <View style={styles.ratingSection}>
                     <View style={styles.ratingLeft}>
-                        <Text style={styles.ratingValue}>4.9</Text>
+                        <Text style={styles.ratingValue}>{userData?.rating || '4.9'}</Text>
                         <View style={styles.starsRow}>
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <Ionicons key={star} name="star" size={16} color="#00E5A0" />
@@ -182,21 +199,11 @@ export default function WorkerProfileScreen() {
                     </View>
 
                     <View style={styles.ratingBars}>
-                        {[
-                            { label: '5', percent: 0.8, val: '80%' },
-                            { label: '4', percent: 0.15, val: '15%' },
-                            { label: '3', percent: 0.03, val: '3%' },
-                            { label: '2', percent: 0.01, val: '1%' },
-                            { label: '1', percent: 0.01, val: '1%' },
-                        ].map((item, idx) => (
-                            <View key={idx} style={styles.barContainer}>
-                                <Text style={styles.barLabel}>{item.label}</Text>
-                                <View style={styles.barBackground}>
-                                    <View style={[styles.barFill, { width: `${item.percent * 100}%` }]} />
-                                </View>
-                                <Text style={styles.barPercent}>{item.val}</Text>
-                            </View>
-                        ))}
+                        {renderRatingRow('5', 0.8, '80%')}
+                        {renderRatingRow('4', 0.15, '15%')}
+                        {renderRatingRow('3', 0.03, '3%')}
+                        {renderRatingRow('2', 0.01, '1%')}
+                        {renderRatingRow('1', 0.01, '1%')}
                     </View>
                 </View>
 
@@ -226,11 +233,11 @@ export default function WorkerProfileScreen() {
                 <View style={styles.chipsRow}>
                     <View style={styles.chip}>
                         <MaterialCommunityIcons name="gender-male" size={18} color="#00E5A0" />
-                        <Text style={styles.chipText}>Male</Text>
+                        <Text style={styles.chipText}>{userData?.gender || 'Male'}</Text>
                     </View>
                     <View style={styles.chip}>
                         <MaterialCommunityIcons name="cake-variant" size={18} color="#00E5A0" />
-                        <Text style={styles.chipText}>34</Text>
+                        <Text style={styles.chipText}>{userData?.age || '34'}</Text>
                     </View>
                 </View>
 
@@ -238,29 +245,27 @@ export default function WorkerProfileScreen() {
                 <View style={styles.verificationSection}>
                     <Text style={styles.sectionTitle}>Verification</Text>
 
-                    <View style={styles.verificationItem}>
-                        <View style={styles.verificationLeft}>
-                            <View style={styles.checkCircle}>
-                                <Ionicons name="checkmark" size={14} color="#00E5A0" />
-                            </View>
-                            <Text style={styles.verificationText}>Verified</Text>
+                    <View style={styles.verificationBadge}>
+                        <View style={styles.verifiedIconContainer}>
+                            <Ionicons name="checkmark-circle" size={20} color="#00E5A0" />
                         </View>
+                        <Text style={styles.verifiedText}>Verified</Text>
                     </View>
 
                     <TouchableOpacity style={styles.verificationItem}>
-                        <View style={styles.verificationLeft}>
+                        <View style={styles.verificationItemLeft}>
                             <MaterialCommunityIcons name="briefcase-outline" size={24} color="#FFF" />
-                            <Text style={styles.verificationText}>Master Electrician License</Text>
+                            <Text style={styles.verificationItemText}>Master Electrician License</Text>
                         </View>
-                        <Ionicons name="eye" size={20} color="#999" />
+                        <Ionicons name="eye" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.verificationItem}>
-                        <View style={styles.verificationLeft}>
+                        <View style={styles.verificationItemLeft}>
                             <MaterialCommunityIcons name="card-account-details-outline" size={24} color="#FFF" />
-                            <Text style={styles.verificationText}>Government Issued ID</Text>
+                            <Text style={styles.verificationItemText}>Government Issued ID</Text>
                         </View>
-                        <Ionicons name="eye" size={20} color="#999" />
+                        <Ionicons name="eye" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
                 </View>
 
@@ -268,6 +273,8 @@ export default function WorkerProfileScreen() {
                 <TouchableOpacity style={styles.uploadBtn}>
                     <Text style={styles.uploadBtnText}>Upload New Document</Text>
                 </TouchableOpacity>
+
+                <View style={{ height: 60 }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -276,7 +283,7 @@ export default function WorkerProfileScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#051405',
+        backgroundColor: '#000000',
     },
     centered: {
         justifyContent: 'center',
@@ -287,24 +294,31 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingBottom: 15,
     },
     backBtn: {
-        padding: 5,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#111827',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#1F2937',
     },
     headerTitle: {
         color: '#FFF',
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: 20,
+        fontWeight: '900',
     },
-    saveBtnText: {
+    saveHeaderBtn: {
         color: '#00E5A0',
-        fontSize: 16,
-        fontWeight: '700',
+        fontSize: 17,
+        fontWeight: '900',
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 40,
+        paddingBottom: 60,
     },
     avatarWrapper: {
         alignItems: 'center',
@@ -314,11 +328,11 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     avatar: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 150,
+        height: 150,
+        borderRadius: 75,
         borderWidth: 2,
-        borderColor: '#1F2937',
+        borderColor: '#111827',
     },
     avatarPlaceholder: {
         backgroundColor: '#111827',
@@ -330,46 +344,55 @@ const styles = StyleSheet.create({
         bottom: 5,
         right: 5,
         backgroundColor: '#00E5A0',
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#051405',
+        borderWidth: 3,
+        borderColor: '#000',
     },
     occupationText: {
         color: '#00E5A0',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '800',
         marginTop: 15,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     ratingSection: {
         flexDirection: 'row',
-        marginTop: 30,
+        marginTop: 35,
         alignItems: 'center',
+        backgroundColor: '#0A0A0A',
+        padding: 20,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#111',
     },
     ratingLeft: {
-        alignItems: 'center',
+        alignItems: 'flex-start',
         width: '35%',
     },
     ratingValue: {
         color: '#FFF',
-        fontSize: 42,
-        fontWeight: '800',
+        fontSize: 54,
+        fontWeight: '900',
+        lineHeight: 60,
     },
     starsRow: {
         flexDirection: 'row',
-        gap: 3,
-        marginVertical: 8,
+        gap: 4,
+        marginVertical: 6,
     },
     reviewsCount: {
         color: '#9CA3AF',
         fontSize: 14,
+        fontWeight: '600',
     },
     ratingBars: {
         flex: 1,
-        marginLeft: 10,
+        marginLeft: 20,
     },
     barContainer: {
         flexDirection: 'row',
@@ -379,24 +402,26 @@ const styles = StyleSheet.create({
     barLabel: {
         color: '#9CA3AF',
         fontSize: 14,
+        fontWeight: '700',
         width: 15,
     },
     barBackground: {
         flex: 1,
-        height: 6,
+        height: 8,
         backgroundColor: '#111827',
-        borderRadius: 3,
-        marginHorizontal: 10,
+        borderRadius: 4,
+        marginHorizontal: 12,
         overflow: 'hidden',
     },
     barFill: {
         height: '100%',
         backgroundColor: '#00E5A0',
-        borderRadius: 3,
+        borderRadius: 4,
     },
     barPercent: {
         color: '#9CA3AF',
         fontSize: 12,
+        fontWeight: '600',
         width: 35,
         textAlign: 'right',
     },
@@ -406,27 +431,36 @@ const styles = StyleSheet.create({
     inputLabel: {
         color: '#9CA3AF',
         fontSize: 14,
-        marginBottom: 8,
+        fontWeight: '800',
+        marginBottom: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     nameInput: {
         color: '#FFF',
-        fontSize: 24,
-        fontWeight: '800',
-        borderBottomWidth: 1,
+        fontSize: 26,
+        fontWeight: '900',
+        borderBottomWidth: 2,
         borderBottomColor: '#1F2937',
-        paddingBottom: 10,
+        paddingBottom: 12,
+        marginBottom: 35,
     },
     aboutLabel: {
         color: '#FFF',
         fontSize: 18,
-        fontWeight: '700',
-        marginTop: 30,
-        marginBottom: 10,
+        fontWeight: '900',
+        marginBottom: 15,
     },
     aboutInput: {
         color: '#9CA3AF',
-        fontSize: 15,
-        lineHeight: 22,
+        fontSize: 16,
+        lineHeight: 26,
+        fontWeight: '500',
+        backgroundColor: '#0A0A0A',
+        padding: 15,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#111',
     },
     chipsRow: {
         flexDirection: 'row',
@@ -436,71 +470,87 @@ const styles = StyleSheet.create({
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 229, 160, 0.1)',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 12,
-        gap: 8,
+        backgroundColor: '#111827',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 15,
+        gap: 10,
         borderWidth: 1,
-        borderColor: 'rgba(0, 229, 160, 0.2)',
+        borderColor: '#1F2937',
     },
     chipText: {
-        color: '#9CA3AF',
-        fontSize: 14,
-        fontWeight: '600',
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '800',
     },
     verificationSection: {
-        marginTop: 40,
+        marginTop: 45,
     },
     sectionTitle: {
         color: '#FFF',
-        fontSize: 20,
-        fontWeight: '800',
+        fontSize: 22,
+        fontWeight: '900',
         marginBottom: 20,
     },
+    verificationBadge: {
+        backgroundColor: '#0A0A0A',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 15,
+        gap: 15,
+        borderWidth: 1,
+        borderColor: '#111',
+    },
+    verifiedIconContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(0, 229, 160, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    verifiedText: {
+        color: '#FFF',
+        fontSize: 17,
+        fontWeight: '800',
+    },
     verificationItem: {
-        backgroundColor: '#0A1A0A',
+        backgroundColor: '#111827',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 15,
-        borderRadius: 12,
-        marginBottom: 10,
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#112211',
+        borderColor: '#1F2937',
     },
-    verificationLeft: {
+    verificationItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 15,
     },
-    checkCircle: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: '#00E5A0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    verificationText: {
+    verificationItemText: {
         color: '#FFF',
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
     },
     uploadBtn: {
-        backgroundColor: '#0F2A0F',
-        height: 54,
-        borderRadius: 12,
+        backgroundColor: 'rgba(0, 229, 160, 0.1)',
+        height: 60,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 25,
         borderWidth: 1,
-        borderColor: '#1A331A',
+        borderStyle: 'dashed',
+        borderColor: '#00E5A0',
     },
     uploadBtnText: {
         color: '#00E5A0',
-        fontSize: 16,
-        fontWeight: '700',
+        fontSize: 17,
+        fontWeight: '800',
     },
 });

@@ -13,10 +13,10 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
-        const { name, about, gender, age, profileImage } = req.body;
+        const updateData = { ...req.body };
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            { name, about, gender, age, profileImage },
+            updateData,
             { new: true }
         );
         if (!user) return res.status(404).json({ success: false, message: "User not found" });

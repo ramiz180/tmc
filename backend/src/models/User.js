@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     phone: { type: String, required: true, unique: true },
+    email: { type: String, default: "" },
     name: { type: String, default: "" },
     role: { type: String, enum: ["customer", "worker", ""], default: "" },
     isActive: { type: Boolean, default: true },

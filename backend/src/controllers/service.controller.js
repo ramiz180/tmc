@@ -9,6 +9,13 @@ export const createService = async (req, res) => {
             return res.status(404).json({ success: false, message: "Worker not found" });
         }
 
+        if (!worker.location || !worker.location.latitude || !worker.location.longitude) {
+            return res.status(400).json({
+                success: false,
+                message: "Please set your business location in your profile first."
+            });
+        }
+
         const newService = new Service({
             name,
             category,
@@ -20,7 +27,7 @@ export const createService = async (req, res) => {
             location: {
                 latitude: worker.location.latitude,
                 longitude: worker.location.longitude,
-                address: `${worker.location.houseNo}, ${worker.location.apartment}`,
+                address: worker.location.houseNo ? `${worker.location.houseNo}, ${worker.location.apartment}` : "Location not specified",
             },
             images,
             videos,
