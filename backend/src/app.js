@@ -7,6 +7,7 @@ import bookingRoutes from "./routes/booking.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import userRoutes from "./routes/user.routes.js";
+import settingRoutes from "./routes/setting.routes.js";
 
 const app = express();
 
@@ -21,5 +22,6 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/settings", settingRoutes);
 
 export default app;

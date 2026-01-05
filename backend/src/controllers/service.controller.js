@@ -2,7 +2,7 @@ import Service from "../models/Service.js";
 import User from "../models/User.js";
 
 export const createService = async (req, res) => {
-    const { name, category, subCategories, price, description, workerId, images, videos, coverageRadius } = req.body;
+    const { name, category, subCategories, price, description, workerId, images, videos, coverageRadius, priceType } = req.body;
     try {
         const worker = await User.findById(workerId);
         if (!worker) {
@@ -21,6 +21,7 @@ export const createService = async (req, res) => {
             category,
             subCategories,
             price,
+            priceType,
             description,
             workerId,
             workerName: worker.name,

@@ -1,5 +1,7 @@
 import Booking from "../models/Booking.js";
 import User from "../models/User.js";
+import Service from "../models/Service.js";
+import { sendBookingNotification } from "../services/notification.service.js";
 
 export const createBooking = async (req, res) => {
     const {
@@ -26,6 +28,26 @@ export const createBooking = async (req, res) => {
         });
 
         await newBooking.save();
+
+        // Send push notification to worker
+        try {
+            const worker = await User.findById(workerId);
+            const customer = await User.findById(customerId);
+            const service = await Service.findById(serviceId);
+
+            if (worker && worker.pushToken && worker.notificationsEnabled) {
+                await sendBookingNotification(
+                    worker.pushToken,
+                    customer?.name || 'A customer',
+                    service?.name || 'your service',
+                    newBooking._id.toString()
+                );
+            }
+        } catch (notifError) {
+            console.error('Failed to send notification:', notifError);
+            // Don't fail the booking if notification fails
+        }
+
         res.status(201).json({ success: true, booking: newBooking });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

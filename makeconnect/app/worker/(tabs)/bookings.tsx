@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG } from '../../../constants/Config';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -27,6 +28,7 @@ const getStatusColor = (status: string) => {
 export default function BookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -75,11 +77,11 @@ export default function BookingsScreen() {
                 style={styles.servicesBody}
                 contentContainerStyle={{ paddingBottom: 150, padding: 20, paddingTop: insets.top + 10 }}
             >
-                <Text style={styles.sectionTitle}>Job Bookings</Text>
+                <Text style={styles.sectionTitle}>{t('bookings.title')}</Text>
                 {loading ? (
                     <ActivityIndicator color="#00E5A0" style={{ marginTop: 20 }} />
                 ) : bookings.length === 0 ? (
-                    <Text style={styles.emptyText}>No bookings received yet.</Text>
+                    <Text style={styles.emptyText}>{t('bookings.noBookings')}</Text>
                 ) : (
                     bookings.map((booking) => (
                         <View

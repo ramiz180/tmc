@@ -13,10 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG } from '../../../constants/Config';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function ChatScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -47,11 +49,11 @@ export default function ChatScreen() {
                 style={styles.servicesBody}
                 contentContainerStyle={{ paddingBottom: 150, padding: 20, paddingTop: insets.top + 10 }}
             >
-                <Text style={styles.sectionTitle}>Messages</Text>
+                <Text style={styles.sectionTitle}>{t('chat.title')}</Text>
                 {loading ? (
                     <ActivityIndicator color="#00E5A0" style={{ marginTop: 20 }} />
                 ) : bookings.length === 0 ? (
-                    <Text style={styles.emptyText}>No active conversations.</Text>
+                    <Text style={styles.emptyText}>{t('chat.noMessages')}</Text>
                 ) : (
                     bookings.map((booking) => (
                         <TouchableOpacity

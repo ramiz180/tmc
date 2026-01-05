@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
     profileImage: { type: String, default: "" },
     gender: { type: String, default: "" },
     age: { type: Number },
+    language: { type: String, default: "en" },
+    pushToken: { type: String, default: "" },
+    notificationsEnabled: { type: Boolean, default: true },
     verificationStatus: { type: String, enum: ["verified", "pending", "unverified"], default: "unverified" },
     documents: [
       {

@@ -38,6 +38,8 @@ export default function AddServiceScreen() {
     const [uploading, setUploading] = useState(false);
     const [coverageRadius, setCoverageRadius] = useState('5'); // Default 5km
     const [isRadiusDropdownOpen, setIsRadiusDropdownOpen] = useState(false);
+    const [priceType, setPriceType] = useState<'fixed' | 'hourly'>('fixed');
+    const [isPriceTypeDropdownOpen, setIsPriceTypeDropdownOpen] = useState(false);
 
     const radiusOptions = ['1', '2', '3', '4', '5', '10'];
 
@@ -86,6 +88,7 @@ export default function AddServiceScreen() {
                     if (found.images) setImages(found.images);
                     if (found.videos) setVideos(found.videos);
                     if (found.coverageRadius) setCoverageRadius(found.coverageRadius.toString());
+                    if (found.priceType) setPriceType(found.priceType);
 
                     // Set available sub-categories for the loaded category
                     if (categoriesList.length > 0) {
@@ -245,6 +248,7 @@ export default function AddServiceScreen() {
                     images,
                     videos,
                     coverageRadius: parseInt(coverageRadius),
+                    priceType,
                 }),
             });
 
@@ -351,15 +355,53 @@ export default function AddServiceScreen() {
 
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Price (₹) *</Text>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="e.g. 499"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="numeric"
-                                value={price}
-                                onChangeText={setPrice}
-                            />
+                        <View style={styles.priceRow}>
+                            <View style={[styles.inputContainer, { flex: 1 }]}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. 499"
+                                    placeholderTextColor="#9CA3AF"
+                                    keyboardType="numeric"
+                                    value={price}
+                                    onChangeText={setPrice}
+                                />
+                            </View>
+                            <View style={styles.priceTypeColumn}>
+                                <TouchableOpacity
+                                    style={styles.dropdownTriggerSmall}
+                                    onPress={() => setIsPriceTypeDropdownOpen(!isPriceTypeDropdownOpen)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.dropdownValueSmall}>{priceType === 'fixed' ? 'Fixed' : 'Hourly'}</Text>
+                                    <Ionicons
+                                        name={isPriceTypeDropdownOpen ? "chevron-up" : "chevron-down"}
+                                        size={16}
+                                        color="#9CA3AF"
+                                    />
+                                </TouchableOpacity>
+                                {isPriceTypeDropdownOpen && (
+                                    <View style={styles.smallDropdownMenu}>
+                                        <TouchableOpacity
+                                            style={[styles.smallDropdownItem, priceType === 'fixed' && styles.smallDropdownItemActive]}
+                                            onPress={() => {
+                                                setPriceType('fixed');
+                                                setIsPriceTypeDropdownOpen(false);
+                                            }}
+                                        >
+                                            <Text style={[styles.smallDropdownText, priceType === 'fixed' && styles.smallDropdownTextActive]}>Fixed Price</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.smallDropdownItem, priceType === 'hourly' && styles.smallDropdownItemActive]}
+                                            onPress={() => {
+                                                setPriceType('hourly');
+                                                setIsPriceTypeDropdownOpen(false);
+                                            }}
+                                        >
+                                            <Text style={[styles.smallDropdownText, priceType === 'hourly' && styles.smallDropdownTextActive]}>Hourly Rate</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </View>
                         </View>
                     </View>
 
@@ -623,6 +665,66 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginBottom: 12,
         fontWeight: '500',
+    },
+    priceRow: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'flex-start',
+    },
+    priceTypeColumn: {
+        width: 120,
+        position: 'relative',
+        zIndex: 1000,
+    },
+    dropdownTriggerSmall: {
+        backgroundColor: '#111827',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        paddingHorizontal: 15,
+        height: 60,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dropdownValueSmall: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    smallDropdownMenu: {
+        position: 'absolute',
+        top: 65,
+        left: 0,
+        right: 0,
+        backgroundColor: '#111827',
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        zIndex: 2000,
+        overflow: 'hidden',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+    },
+    smallDropdownItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1F2937',
+    },
+    smallDropdownItemActive: {
+        backgroundColor: 'rgba(0, 229, 160, 0.1)',
+    },
+    smallDropdownText: {
+        color: '#9CA3AF',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    smallDropdownTextActive: {
+        color: '#00E5A0',
     },
     mediaContainer: {
         flexDirection: 'row',

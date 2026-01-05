@@ -16,10 +16,13 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG } from '../../../constants/Config';
+import { useLanguage } from '../../../context/LanguageContext';
+import { registerForPushNotificationsAsync, savePushTokenToBackend } from '../../../services/NotificationService';
 
 export default function WorkerProfileScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState<any>(null);
 
@@ -38,6 +41,12 @@ export default function WorkerProfileScreen() {
             const data = await response.json();
             if (data.success) {
                 setUserData(data.user);
+
+                // Register for push notifications
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    await savePushTokenToBackend(userId, pushToken);
+                }
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -48,12 +57,12 @@ export default function WorkerProfileScreen() {
 
     const handleLogout = async () => {
         Alert.alert(
-            'Logout',
+            t('common.logout'),
             'Are you sure you want to logout?',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Logout',
+                    text: t('common.logout'),
                     style: 'destructive',
                     onPress: async () => {
                         await AsyncStorage.clear();
@@ -111,30 +120,30 @@ export default function WorkerProfileScreen() {
                         style={styles.editProfileBtn}
                         onPress={() => router.push('/worker/editprofile')}
                     >
-                        <Text style={styles.editProfileText}>Edit Profile</Text>
+                        <Text style={styles.editProfileText}>{t('profile.editProfile')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Account Section */}
-                <Text style={styles.sectionLabel}>Account</Text>
+                <Text style={styles.sectionLabel}>{t('profile.account')}</Text>
                 <View style={styles.menuGroup}>
-                    {renderMenuItem('tools', 'My Services', () => router.push('/worker/services'), false, MaterialCommunityIcons as any)}
-                    {renderMenuItem('location-outline', 'Service Location', () => router.push('/worker/setlocation'), true)}
+                    {renderMenuItem('tools', t('profile.myServices'), () => router.push('/worker/services'), false, MaterialCommunityIcons as any)}
+                    {renderMenuItem('location-outline', t('profile.serviceLocation'), () => router.push('/worker/setlocation'), true)}
                 </View>
 
                 {/* Settings Section */}
-                <Text style={styles.sectionLabel}>Settings</Text>
+                <Text style={styles.sectionLabel}>{t('profile.settings')}</Text>
                 <View style={styles.menuGroup}>
-                    {renderMenuItem('help-circle-outline', 'Help & Support')}
-                    {renderMenuItem('globe-outline', 'Languages')}
-                    {renderMenuItem('document-text-outline', 'Terms & Conditions')}
-                    {renderMenuItem('shield-checkmark-outline', 'Privacy Policy', undefined, true)}
+                    {renderMenuItem('help-circle', t('profile.helpSupport'), () => router.push('/worker/settings/help'))}
+                    {renderMenuItem('earth', t('profile.languages'), () => router.push('/worker/settings/languages'), false, MaterialCommunityIcons as any)}
+                    {renderMenuItem('gavel', t('profile.termsConditions'), () => router.push('/worker/settings/terms'), false, MaterialCommunityIcons as any)}
+                    {renderMenuItem('shield-account', t('profile.privacyPolicy'), () => router.push('/worker/settings/privacy'), true, MaterialCommunityIcons as any)}
                 </View>
 
                 {/* Logout Button */}
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={22} color="#EF4444" style={styles.logoutIcon} />
-                    <Text style={styles.logoutText}>Logout</Text>
+                    <Text style={styles.logoutText}>{t('common.logout')}</Text>
                 </TouchableOpacity>
 
                 <View style={{ height: 100 }} />

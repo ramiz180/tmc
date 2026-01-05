@@ -18,8 +18,24 @@ import {
   Navigation,
   X,
   ExternalLink,
-  Eye
+  Eye,
+  Play
 } from "lucide-react";
+
+const VideoPlayerModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
+    <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
+    <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white backdrop-blur-md transition-all active:scale-95"
+      >
+        <X size={24} />
+      </button>
+      <video src={url} controls autoPlay className="w-full h-full" />
+    </div>
+  </div>
+);
 
 const MapMarker = ({ text }: { text: string; lat: number; lng: number }) => (
   <div className="flex flex-col items-center justify-center transform -translate-x-1/2 -translate-y-full hover:scale-110 transition-transform cursor-pointer drop-shadow-md" title={text}>
@@ -200,7 +216,7 @@ const UserCard = ({ u, onToggleStatus, onDelete, onViewServices }: { u: any; onT
   );
 };
 
-const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }) => {
+const ServicesModal = ({ worker, onClose, onPlayVideo }: { worker: any; onClose: () => void; onPlayVideo: (url: string) => void }) => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -252,7 +268,7 @@ const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {services.map((s) => (
-                <div key={s._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+                <div key={s._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group shrink-0 h-fit flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-green-100 inline-block mb-1">
@@ -261,7 +277,10 @@ const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }
                       <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{s.name}</h4>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-black text-green-600">₹{s.price}</p>
+                      <p className="text-xl font-black text-green-600">₹{s.price}{s.priceType === 'hourly' ? '/hr' : ''}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                        {s.priceType === 'hourly' ? 'Hourly Rate' : 'Fixed Price'}
+                      </p>
                     </div>
                   </div>
                   <p className="text-gray-500 text-xs mb-4 line-clamp-2 leading-relaxed">
@@ -273,24 +292,33 @@ const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }
                       <MapPin size={14} className="text-red-500" />
                       <span className="font-medium truncate">{s.location?.address}</span>
                     </div>
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1">
+                      <Navigation size={12} className="text-green-500" />
+                      <span>{s.coverageRadius || 5}km Radius</span>
+                    </div>
                   </div>
 
                   {/* Media Grid */}
                   {(s.images?.length > 0 || s.videos?.length > 0) && (
                     <div className="grid grid-cols-4 gap-2 mb-4 mt-auto">
                       {s.images?.slice(0, 4).map((img: string, idx: number) => (
-                        <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative group/media">
+                        <div key={`img-${idx}`} className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative group/media">
                           <img src={img} alt="" className="w-full h-full object-cover" />
-                          {idx === 3 && s.images.length > 4 && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-xs">
-                              +{s.images.length - 4}
-                            </div>
-                          )}
                         </div>
                       ))}
-                      {!s.images?.length && s.videos?.slice(0, 4).map((vid: string, idx: number) => (
-                        <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-gray-100 bg-gray-900 flex items-center justify-center">
-                          <span className="text-white text-[10px] font-bold">VIDEO</span>
+                      {/* Show Videos */}
+                      {s.videos?.slice(0, 4 - (s.images?.length > 4 ? 4 : s.images?.length || 0)).map((vid: string, idx: number) => (
+                        <div
+                          key={`vid-${idx}`}
+                          onClick={() => onPlayVideo(vid)}
+                          className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative bg-black cursor-pointer group/vid"
+                        >
+                          <video src={vid} className="w-full h-full object-cover opacity-60 group-hover/vid:opacity-80 transition-opacity" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 group-hover/vid:scale-110 transition-transform">
+                              <Play size={10} className="text-white fill-white ml-0.5" />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -308,9 +336,10 @@ const ServicesModal = ({ worker, onClose }: { worker: any; onClose: () => void }
 export default function Users() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState<"customer" | "worker">("customer");
+  const [activeSubTab, setActiveSubTab] = useState<"customer" | "worker" | "hirer">("customer");
   const [selectedWorker, setSelectedWorker] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -452,8 +481,10 @@ export default function Users() {
         <ServicesModal
           worker={selectedWorker}
           onClose={() => { setIsModalOpen(false); setSelectedWorker(null); }}
+          onPlayVideo={setActiveVideo}
         />
       )}
+      {activeVideo && <VideoPlayerModal url={activeVideo} onClose={() => setActiveVideo(null)} />}
     </div>
   );
 }

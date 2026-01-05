@@ -11,13 +11,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CONFIG } from '../../../constants/Config';
+import { useLanguage } from '../../../context/LanguageContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 export default function WorkerHomeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [status, setStatus] = useState<'available' | 'unavailable'>('available');
+    const [userName, setUserName] = useState('');
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    const fetchUserData = async () => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            if (userId) {
+                const response = await fetch(`${CONFIG.BACKEND_URL}/users/${userId}`);
+                const data = await response.json();
+                if (data.success && data.user.name) {
+                    setUserName(data.user.name);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    };
 
     return (
         <View style={styles.root}>
@@ -40,12 +63,12 @@ export default function WorkerHomeScreen() {
                     onPress={() => router.push('/worker/addservice')}
                 >
                     <Ionicons name="add" size={18} color="#00E5A0" />
-                    <Text style={styles.addServiceText}>Add Service</Text>
+                    <Text style={styles.addServiceText}>{t('services.addService')}</Text>
                 </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
-                <Text style={styles.statusLabel}>Set your status</Text>
+                <Text style={styles.statusLabel}>Welcome, {userName || 'Worker'}!</Text>
 
                 <View style={styles.toggleContainer}>
                     <TouchableOpacity

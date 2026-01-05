@@ -17,6 +17,7 @@ const serviceSchema = new mongoose.Schema(
         images: [{ type: String }],
         videos: [{ type: String }],
         coverageRadius: { type: Number, required: true, default: 5 },
+        priceType: { type: String, enum: ["hourly", "fixed"], default: "fixed" },
     },
     { timestamps: true }
 );

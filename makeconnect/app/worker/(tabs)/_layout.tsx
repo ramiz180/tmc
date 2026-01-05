@@ -3,9 +3,11 @@ import { Tabs } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, StyleSheet } from 'react-native';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function WorkerLayout() {
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
 
     return (
         <Tabs
@@ -41,7 +43,7 @@ export default function WorkerLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Home',
+                    title: t('tabs.home'),
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="home" size={24} color={color} />
                     ),
@@ -50,7 +52,7 @@ export default function WorkerLayout() {
             <Tabs.Screen
                 name="services"
                 options={{
-                    title: 'Services',
+                    title: t('tabs.services'),
                     tabBarIcon: ({ color, size }) => (
                         <MaterialCommunityIcons name="tools" size={24} color={color} />
                     ),
@@ -59,7 +61,7 @@ export default function WorkerLayout() {
             <Tabs.Screen
                 name="chat"
                 options={{
-                    title: 'Chat',
+                    title: t('tabs.chat'),
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="chatbubbles-outline" size={24} color={color} />
                     ),
@@ -68,7 +70,7 @@ export default function WorkerLayout() {
             <Tabs.Screen
                 name="bookings"
                 options={{
-                    title: 'Bookings',
+                    title: t('tabs.bookings'),
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="calendar-outline" size={24} color={color} />
                     ),
@@ -77,7 +79,7 @@ export default function WorkerLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: 'Profile',
+                    title: t('tabs.profile'),
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="person-outline" size={24} color={color} />
                     ),

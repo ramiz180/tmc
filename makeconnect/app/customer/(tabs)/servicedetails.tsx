@@ -216,8 +216,8 @@ export default function ServiceDetailsScreen() {
                     <View style={styles.priceSection}>
                         <Text style={styles.priceHeadText}>SERVICE PRICE</Text>
                         <View style={styles.priceValueRow}>
-                            <Text style={styles.priceTotalText}>₹{service.price}</Text>
-                            <Text style={styles.fixedPriceText}>(Fixed Price)</Text>
+                            <Text style={styles.priceTotalText}>₹{service.price}{service.priceType === 'hourly' ? '/hr' : ''}</Text>
+                            <Text style={styles.fixedPriceText}>({service.priceType === 'hourly' ? 'Hourly Rate' : 'Fixed Price'})</Text>
                         </View>
                     </View>
 

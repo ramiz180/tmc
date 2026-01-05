@@ -13,10 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG } from '../../../constants/Config';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function ServicesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useLanguage();
     const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -49,18 +51,18 @@ export default function ServicesScreen() {
                 style={styles.servicesBody}
                 contentContainerStyle={{ paddingBottom: 150, padding: 20, paddingTop: insets.top + 10 }}
             >
-                <Text style={styles.sectionTitle}>My Services</Text>
+                <Text style={styles.sectionTitle}>{t('services.title')}</Text>
                 {loading ? (
                     <ActivityIndicator color="#00E5A0" style={{ marginTop: 20 }} />
                 ) : services.length === 0 ? (
-                    <Text style={styles.emptyText}>You haven't added any services yet.</Text>
+                    <Text style={styles.emptyText}>{t('services.noServices')}</Text>
                 ) : (
                     services.map((service) => (
                         <View key={service._id} style={styles.serviceItem}>
                             <View style={styles.serviceMainInfo}>
                                 <Text style={styles.serviceName}>{service.name}</Text>
                                 <Text style={styles.serviceCategory}>{service.category}</Text>
-                                <Text style={styles.servicePrice}>₹{service.price}</Text>
+                                <Text style={styles.servicePrice}>₹{service.price}{service.priceType === 'hourly' ? '/hr' : ' Fixed'}</Text>
                             </View>
                             <TouchableOpacity
                                 style={styles.editBtn}
@@ -70,7 +72,7 @@ export default function ServicesScreen() {
                                 })}
                             >
                                 <Ionicons name="create-outline" size={20} color="#00E5A0" />
-                                <Text style={styles.editText}>Edit</Text>
+                                <Text style={styles.editText}>{t('common.edit')}</Text>
                             </TouchableOpacity>
                         </View>
                     ))

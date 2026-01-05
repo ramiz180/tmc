@@ -40,12 +40,29 @@ export default function CustomerHomeScreen() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [userLocation, setUserLocation] = useState<any>(null);
+    const [userName, setUserName] = useState('there');
 
     useEffect(() => {
+        fetchUserData();
         fetchLocation();
         fetchCategories();
         fetchServices();
     }, []);
+
+    const fetchUserData = async () => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            if (userId) {
+                const response = await fetch(`${CONFIG.BACKEND_URL}/users/${userId}`);
+                const data = await response.json();
+                if (data.success && data.user.name) {
+                    setUserName(data.user.name);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    };
 
     const fetchLocation = async () => {
         const locJson = await AsyncStorage.getItem('userLocation');
@@ -131,7 +148,7 @@ export default function CustomerHomeScreen() {
                 {/* Greeting & Search */}
                 {!selectedCategory && (
                     <View style={styles.topSection}>
-                        <Text style={styles.greeting}>Hello!</Text>
+                        <Text style={styles.greeting}>Hello, {userName}!</Text>
                         <View style={styles.searchContainer}>
                             <Ionicons name="search" size={20} color="#9CA3AF" />
                             <TextInput
@@ -252,7 +269,12 @@ const WorkerCard = ({ service, distance }: any) => {
                     </View>
                 </View>
                 <Text style={styles.serviceTitle} numberOfLines={1}>{service.name}</Text>
-                <Text style={styles.distanceText}>{distance} km away</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={styles.distanceText}>{distance} km away</Text>
+                    <View style={styles.priceTypeBadge}>
+                        <Text style={styles.priceTypeText}>₹{service.price}{service.priceType === 'hourly' ? '/hr' : ' Fixed'}</Text>
+                    </View>
+                </View>
             </View>
             <TouchableOpacity
                 style={styles.bookBtn}
@@ -450,6 +472,17 @@ const styles = StyleSheet.create({
         color: '#00E5A0',
         fontSize: 12,
         fontWeight: '600',
+    },
+    priceTypeBadge: {
+        backgroundColor: 'rgba(0, 229, 160, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    priceTypeText: {
+        color: '#00E5A0',
+        fontSize: 11,
+        fontWeight: '700',
     },
     bookBtn: {
         backgroundColor: '#00E5A0',
