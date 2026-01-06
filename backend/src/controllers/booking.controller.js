@@ -40,7 +40,9 @@ export const createBooking = async (req, res) => {
                     worker.pushToken,
                     customer?.name || 'A customer',
                     service?.name || 'your service',
-                    newBooking._id.toString()
+                    newBooking._id.toString(),
+                    location?.address || location || 'Client Location',
+                    service?.price || '0'
                 );
             }
         } catch (notifError) {

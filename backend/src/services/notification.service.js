@@ -32,13 +32,17 @@ export const sendPushNotification = async (pushToken, title, body, data = {}) =>
     }
 };
 
-export const sendBookingNotification = async (workerPushToken, customerName, serviceName, bookingId) => {
+export const sendBookingNotification = async (workerPushToken, customerName, serviceName, bookingId, location, price) => {
     const title = '🔔 New Booking Request!';
     const body = `${customerName} wants to book ${serviceName}`;
     const data = {
         type: 'new_booking',
         bookingId: bookingId,
         screen: 'bookings',
+        customerName,
+        serviceName,
+        location: location,
+        price: price
     };
 
     return await sendPushNotification(workerPushToken, title, body, data);

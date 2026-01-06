@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import { useEffect, useState } from "react";
 import { X, Play } from "lucide-react";
 
+
 const VideoPlayerModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
     <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
@@ -19,7 +20,24 @@ const VideoPlayerModal = ({ url, onClose }: { url: string; onClose: () => void }
   </div>
 );
 
-const ServiceCard = ({ s, onPlayVideo }: { s: any; onPlayVideo: (url: string) => void }) => (
+const ImageViewerModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
+    <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
+    <div className="relative w-full max-w-5xl h-full flex items-center justify-center pointer-events-none">
+      <div className="relative max-h-[90vh] max-w-full pointer-events-auto animate-in zoom-in duration-300">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 md:top-4 md:right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all active:scale-95"
+        >
+          <X size={24} />
+        </button>
+        <img src={url} alt="Full view" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+      </div>
+    </div>
+  </div>
+);
+
+const ServiceCard = ({ s, onPlayVideo, onViewImage }: { s: any; onPlayVideo: (url: string) => void; onViewImage: (url: string) => void }) => (
   <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 group flex flex-col">
     <div className="p-6 flex-1 flex flex-col">
       <div className="flex justify-between items-start mb-4">
@@ -74,7 +92,11 @@ const ServiceCard = ({ s, onPlayVideo }: { s: any; onPlayVideo: (url: string) =>
       {(s.images?.length > 0 || s.videos?.length > 0) && (
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide mb-4">
           {s.images?.map((img: string, idx: number) => (
-            <div key={`img-${idx}`} className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+            <div
+              key={`img-${idx}`}
+              className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0 cursor-pointer hover:opacity-90 transition-opacity active:scale-95"
+              onClick={() => onViewImage(img)}
+            >
               <img src={img} alt="" className="w-full h-full object-cover" />
             </div>
           ))}
@@ -82,7 +104,7 @@ const ServiceCard = ({ s, onPlayVideo }: { s: any; onPlayVideo: (url: string) =>
             <div
               key={`vid-${idx}`}
               onClick={() => onPlayVideo(vid)}
-              className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0 bg-black relative cursor-pointer group/vid"
+              className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0 bg-black relative cursor-pointer group/vid active:scale-95"
             >
               <video src={vid} className="w-full h-full object-cover opacity-60 group-hover/vid:opacity-80 transition-opacity" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -98,12 +120,19 @@ const ServiceCard = ({ s, onPlayVideo }: { s: any; onPlayVideo: (url: string) =>
       <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
         <div className="flex -space-x-2">
           {s.images?.slice(0, 3).map((img: string, i: number) => (
-            <div key={i} className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white overflow-hidden">
+            <div
+              key={i}
+              className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white overflow-hidden cursor-pointer hover:z-10 transition-transform hover:scale-110"
+              onClick={() => onViewImage(img)}
+            >
               <img src={img} className="w-full h-full object-cover" alt="" />
             </div>
           ))}
           {s.images?.length > 3 && (
-            <div className="w-7 h-7 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-[8px] font-black text-black">
+            <div
+              className="w-7 h-7 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-[8px] font-black text-black cursor-pointer hover:z-10 transition-transform hover:scale-110"
+              onClick={() => onViewImage(s.images[3])} // Open 4th image (index 3) when clicked
+            >
               +{s.images.length - 3}
             </div>
           )}
@@ -120,6 +149,7 @@ export default function Services() {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/admin/services")
@@ -171,13 +201,20 @@ export default function Services() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {services.map((s: any) => (
-                <ServiceCard key={s._id} s={s} onPlayVideo={(url) => setActiveVideo(url)} />
+                <ServiceCard
+                  key={s._id}
+                  s={s}
+                  onPlayVideo={(url) => setActiveVideo(url)}
+                  onViewImage={(url) => setActiveImage(url)}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
       {activeVideo && <VideoPlayerModal url={activeVideo} onClose={() => setActiveVideo(null)} />}
+      {activeImage && <ImageViewerModal url={activeImage} onClose={() => setActiveImage(null)} />}
     </div>
   );
 }
+

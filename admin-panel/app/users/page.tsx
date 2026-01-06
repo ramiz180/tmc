@@ -37,6 +37,23 @@ const VideoPlayerModal = ({ url, onClose }: { url: string; onClose: () => void }
   </div>
 );
 
+const ImageViewerModal = ({ url, onClose }: { url: string; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
+    <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
+    <div className="relative w-full max-w-5xl h-full flex items-center justify-center pointer-events-none">
+      <div className="relative max-h-[90vh] max-w-full pointer-events-auto animate-in zoom-in duration-300">
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 md:top-4 md:right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all active:scale-95"
+        >
+          <X size={24} />
+        </button>
+        <img src={url} alt="Full view" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+      </div>
+    </div>
+  </div>
+);
+
 const MapMarker = ({ text }: { text: string; lat: number; lng: number }) => (
   <div className="flex flex-col items-center justify-center transform -translate-x-1/2 -translate-y-full hover:scale-110 transition-transform cursor-pointer drop-shadow-md" title={text}>
     <div className="bg-white p-1 rounded-full border-2 border-green-500 shadow-lg">
@@ -216,7 +233,7 @@ const UserCard = ({ u, onToggleStatus, onDelete, onViewServices }: { u: any; onT
   );
 };
 
-const ServicesModal = ({ worker, onClose, onPlayVideo }: { worker: any; onClose: () => void; onPlayVideo: (url: string) => void }) => {
+const ServicesModal = ({ worker, onClose, onPlayVideo, onViewImage }: { worker: any; onClose: () => void; onPlayVideo: (url: string) => void; onViewImage: (url: string) => void }) => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -302,7 +319,11 @@ const ServicesModal = ({ worker, onClose, onPlayVideo }: { worker: any; onClose:
                   {(s.images?.length > 0 || s.videos?.length > 0) && (
                     <div className="grid grid-cols-4 gap-2 mb-4 mt-auto">
                       {s.images?.slice(0, 4).map((img: string, idx: number) => (
-                        <div key={`img-${idx}`} className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative group/media">
+                        <div
+                          key={`img-${idx}`}
+                          className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative group/media cursor-pointer hover:opacity-90 transition-opacity active:scale-95"
+                          onClick={() => onViewImage(img)}
+                        >
                           <img src={img} alt="" className="w-full h-full object-cover" />
                         </div>
                       ))}
@@ -311,7 +332,7 @@ const ServicesModal = ({ worker, onClose, onPlayVideo }: { worker: any; onClose:
                         <div
                           key={`vid-${idx}`}
                           onClick={() => onPlayVideo(vid)}
-                          className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative bg-black cursor-pointer group/vid"
+                          className="aspect-square rounded-xl overflow-hidden border border-gray-100 relative bg-black cursor-pointer group/vid active:scale-95"
                         >
                           <video src={vid} className="w-full h-full object-cover opacity-60 group-hover/vid:opacity-80 transition-opacity" />
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -340,6 +361,7 @@ export default function Users() {
   const [selectedWorker, setSelectedWorker] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -482,9 +504,11 @@ export default function Users() {
           worker={selectedWorker}
           onClose={() => { setIsModalOpen(false); setSelectedWorker(null); }}
           onPlayVideo={setActiveVideo}
+          onViewImage={setActiveImage}
         />
       )}
       {activeVideo && <VideoPlayerModal url={activeVideo} onClose={() => setActiveVideo(null)} />}
+      {activeImage && <ImageViewerModal url={activeImage} onClose={() => setActiveImage(null)} />}
     </div>
   );
 }

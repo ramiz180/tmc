@@ -20,7 +20,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.makeconnect"
+      "package": "com.gnixar.makeconnect",
+      "permissions": [
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "output": "static",
@@ -53,6 +57,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "41f6a5ae-73b8-4424-9d47-231a38de1ed0"
+      }
     }
   }
 }
